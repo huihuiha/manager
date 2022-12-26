@@ -2,7 +2,7 @@ import { terser } from 'rollup-plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 
 module.exports = {
-  input: 'packages/index.ts',
+  input: 'src/index.ts',
   output: [
     {
       format: 'cjs',
