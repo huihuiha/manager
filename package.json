@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "jest --watch",
-    "build": "rollup -config rollup.config.js"
+    "build": "rollup -c --bundleConfigAsCjs"
   },
   "repository": {
     "type": "git",

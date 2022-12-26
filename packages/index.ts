@@ -1,1 +1,3 @@
-export { default as ActionMnager } from './ActionManager';
+import ActionManager from './ActionManager';
+
+export default ActionManager;
