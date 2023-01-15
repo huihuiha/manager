@@ -12,13 +12,13 @@ export type ActionInfoType = {
   /** 交互名称 */
   name: string;
   /** 交互权重 */
-  weight: number;
+  weight?: number;
   /** 是否串行 true表示串行：交互不可与其他交互叠加执行，反之可与其他交互叠加执行 */
-  series: boolean;
+  series?: boolean;
   /** 交互管理器clear时是否执行交互回调函数*/
-  exec: boolean;
+  exec?: boolean;
   /** 交互状态  wait => 等待、 start 交互开始、 end 交互结束 */
-  status: 'wait' | 'start' | 'end';
+  status?: 'wait' | 'start' | 'end';
 };
 
 /** 交互队列 */
