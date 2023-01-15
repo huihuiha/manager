@@ -1,55 +1,63 @@
 /**
  * @file ActionManager
  * @description 交互管理器
- * @author huihuiha
+ * @author huihui
  */
 
+import type {
+  OrderByType,
+  SupportEvent,
+  SupportEventFn,
+  ActionFnType,
+  ActionInfoType,
+  ActionQueueType,
+  EventFnType,
+  EventInfoType,
+} from './types';
+
 // debug控制开关 true 打开log、 false 关闭log
-let debug = false;
-
-/** 交互权重的排序方式 DESC 降序 ASC 升序 */
-type OrderType = 'DESC' | 'ASC';
-
-/** 交互 */
-type ActionInfoType = {
-  /** 交互名称 */
-  name: string;
-  /** 交互权重 */
-  weight: number;
-  /** 是否串行 */
-  series: boolean;
-  /** clear时是否执行交互回调函数 */
-  exec: boolean;
-};
+let debug: boolean = false;
 
 /**
  * 交互基类
  */
 class Action {
-  public orderBy: OrderType;
-  public queue: any[];
-  public _supportEvents: ('action' | 'done' | 'allDone')[];
-  public _eventFn: any;
+  // 排序规则
+  protected orderBy: OrderByType = 'DESC';
+  // 交互队列
+  protected queue: ActionQueueType[];
+  // 支持的事件列表
+  private _supportEvents: SupportEvent[] = ['action', 'done', 'allDone'];
+  // 事件监听函数集合
+  private _eventFn: SupportEventFn = {
+    // 交互执行事件监听回调函数集合
+    action: {},
+    // 交互结束事件监听回调函数集合
+    done: {},
+    // 交互全部结束事件监听回调函数集合
+    allDone: {},
+  };
 
-  constructor(orderBy: OrderType = 'DESC') {
-    // 排序规则  ASC 升序、 DESC 降序
+  constructor(orderBy?: OrderByType) {
     this.orderBy = orderBy;
-    // 交互队列
     this.queue = [];
-    // 支持的事件列表
-    this._supportEvents = ['action', 'done', 'allDone'];
-    // 事件监听函数集合
-    this._eventFn = {
-      // 交互执行事件监听回调函数集合
-      action: {},
-      // 交互结束事件监听回调函数集合
-      done: {},
-      // 交互全部结束事件监听回调函数集合
-      allDone: {},
-    };
   }
 
-  enQueue(actionFn: (...rest: any[]) => void, actionInfo: ActionInfoType) {
+  /**
+   * enQueue 交互入队
+   * @param {ActionFnType} actionFn 交互回调函数
+   * @param {ActionInfoType} actionInfo 交互配置信息
+   */
+  enQueue(
+    actionFn: ActionFnType = () => {},
+    actionInfo: ActionInfoType = {
+      name: '',
+      weight: 0,
+      series: true,
+      exec: false,
+      status: 'wait',
+    }
+  ) {
     // 查找交互队列中是否已入队该交互
     let action = this.queue.find(
       (action) => action.actionInfo.name === actionInfo.name
@@ -60,7 +68,6 @@ class Action {
       action.actionInfo = {
         ...action.actionInfo,
         ...actionInfo,
-        // 交互状态 wait => 等待、 start 交互开始、 end 交互结束
         status: 'wait',
       };
 
@@ -205,7 +212,7 @@ class Action {
 
   /**
    * done 交互结束
-   * @param {Object} actionName 交互名称
+   * @param {string} actionName 交互名称
    */
   done(actionName: string = '') {
     // 查找交互队列中是否已入队该交互
@@ -261,17 +268,14 @@ class Action {
   /**
    * on 绑定事件处理函数，支持绑定多个处理函数
    *
-   * @param {String} event 事件类型  action => 交互进行、 done => 交互结束、 allDone => 交互全部结束
-   * @param {Function} fn 该事件被触发时执行的函数
-   * @param {Object} options 可选参数
-   * @param {String} options.namespace 函数的命名空间，即唯一标识符，同名函数会被覆盖
-   * @param {Boolean} options.once 函数是否只执行一次 默认false
-   * @returns {Object} Action 交互基类，方便链式调用
+   * @param {SupportEvent} event 事件类型
+   * @param {EventFnType} fn 该事件被触发时执行的函数
+   * @param {EventInfoType} options 可选参数
    */
   on(
-    event: 'action' | 'done' | 'adllDone',
-    fn = () => {},
-    options = { namespace: '', once: false }
+    event: SupportEvent,
+    fn: EventFnType = () => {},
+    options: EventInfoType = { namespace: '', once: false }
   ) {
     if (typeof event !== 'string' || !event) {
       console.error(
@@ -313,12 +317,11 @@ class Action {
   /**
    * off 解绑事件处理函数
    *
-   * @param {String} event action => 交互进行、 done => 交互结束、 allDone => 交互全部结束
-   * @param {String} namespace 函数的命名空间，即唯一标识符，不传则全部解绑
-   * @returns {Object} Action 交互基类，方便链式调用
+   * @param {SupportEvent} event action => 交互进行、 done => 交互结束、 allDone => 交互全部结束
+   * @param {string} namespace 函数的命名空间，即唯一标识符，不传则全部解绑
    */
-  off(event = '', namespace = '') {
-    if (event === '') {
+  off(event: SupportEvent = 'action', namespace: string = '') {
+    if (!event) {
       debug && console.info('【 ActionManager log 】移除所有事件监听函数');
 
       this._eventFn = { action: {}, done: {}, allDone: {} };
@@ -372,4 +375,168 @@ class Action {
   }
 }
 
-export default new Action();
+/**
+ * 交互管理器
+ */
+class ActionManager {
+  // 交互实例集合
+  private _actions: Record<string, Action>;
+  // 当前处于激活态的交互实例
+  private _activated: string;
+
+  constructor() {
+    this._actions = {
+      __DEFAULT__: new Action(),
+    };
+    this._activated = '__DEFAULT__';
+  }
+
+  /**
+   * debug 打开调试日志
+   *
+   */
+  debug() {
+    debug = true;
+  }
+
+  /**
+   * init 创建交互实例
+   *
+   * @param {String} instanceName 交互实例的名称，建议传递命名空间防止多次调用被覆盖
+   * @param {OrderByType} orderBy 排序规则  ASC 升序、 DESC 降序
+   */
+  init(
+    instanceName: string = '__DEFAULT__',
+    orderBy: OrderByType = 'DESC'
+  ): ActionManager {
+    debug &&
+      console.info(`【 ActionManager log 】初始化交互实例 ${instanceName}`);
+
+    // 初始化交互实例
+    this._actions[instanceName] = new Action(orderBy);
+
+    // 激活交互实例
+    this.use(instanceName);
+
+    return this;
+  }
+
+  /**
+   * use 激活交互实例
+   *
+   * @description 当页面切换或onShow/onHide时，需要激活对应的交互实例
+   * @param {String} instanceName 需要激活的交互实例名称
+   */
+  use(instanceName: string = '__DEFAULT__'): ActionManager {
+    debug &&
+      console.info(`【 ActionManager log 】激活交互实例 ${instanceName}`);
+
+    // 记录当前被激活的交互实例名称
+    this._activated = instanceName;
+    return this;
+  }
+
+  /**
+   * enQueue 交互入队
+   *
+   * @param {ActionFnType} actionFn 交互回调函数
+   * @param {ActionInfoType} actionInfo 交互信息
+   */
+  enQueue(
+    actionFn: ActionFnType = () => {},
+    actionInfo: ActionInfoType = {
+      name: '',
+      weight: 0,
+      series: true,
+      exec: false,
+      status: 'wait',
+    }
+  ): ActionManager {
+    // 检查是否传递交互名称
+    if (actionInfo.name === '') {
+      console.error(
+        '【 ActionManager.enQueue error 】 actionInfo.name cannot be empty!'
+      );
+      return this;
+    }
+
+    this._actions[this._activated].enQueue(actionFn, actionInfo);
+    return this;
+  }
+
+  /**
+   * start 启动交互实例
+   */
+  start(): ActionManager {
+    debug &&
+      console.info(`【 ActionManager log 】启动交互实例 ${this._activated}`);
+
+    this._actions[this._activated].unQueue();
+    return this;
+  }
+
+  /**
+   * done 交互结束
+   * @param {string} actionName 交互名称
+   */
+  done(actionName: string = ''): ActionManager {
+    if (actionName === '') {
+      console.error(
+        '【 ActionManager.done error 】 actionName cannot be empty!'
+      );
+      return this;
+    }
+
+    this._actions[this._activated].done(actionName);
+    return this;
+  }
+
+  /**
+   * on 绑定事件处理函数，支持绑定多个处理函数
+   *
+   * @param {SupportEvent} event 事件类型
+   * @param {EventFnType} fn 该事件被触发时执行的函数
+   * @param {EventInfoType} options 可选参数
+   */
+  on(
+    event: SupportEvent,
+    fn: EventFnType,
+    options: EventInfoType
+  ): ActionManager {
+    this._actions[this._activated].on(event, fn, options);
+    return this;
+  }
+
+  /**
+   * off 解绑事件处理函数
+   *
+   * @param {SupportEvent} event action => 交互进行、 done => 交互结束、 allDone => 交互实例中的交互全部结束
+   * @param {string} namespace 函数的命名空间，即唯一标识符，不传则全部解绑
+   * @param {string} instanceName 需要清空的交互实例名称
+   */
+  off(
+    event: SupportEvent = 'action',
+    namespace: string = '',
+    instanceName: string = ''
+  ): ActionManager {
+    instanceName = instanceName || this._activated;
+
+    this._actions[instanceName] &&
+      this._actions[instanceName].off(event, namespace);
+    return this;
+  }
+
+  /**
+   * clear 清空交互队列
+   * @description 注意：清空队列时并不会将正在执行的交互一并停止
+   * @param {string} instanceName 需要清空的交互实例名称
+   */
+  clear(instanceName: string = ''): ActionManager {
+    instanceName = instanceName || this._activated;
+
+    this._actions[instanceName] && this._actions[instanceName].clear();
+    return this;
+  }
+}
+
+export default new ActionManager();
