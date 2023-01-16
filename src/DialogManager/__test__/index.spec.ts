@@ -49,12 +49,31 @@ describe('DialogManager', () => {
   test('链式操作', () => {
     const showFn = jest.fn();
     const closeFn = jest.fn();
-    DialogManager.on('show', showFn).on('close', closeFn);
+    DialogManager.init('test')
+      .use('test')
+      .on('show', showFn)
+      .on('close', closeFn);
 
     DialogManager.show({ name: 'xxx' });
     DialogManager.close();
 
     expect(showFn).toBeCalledTimes(1);
     expect(closeFn).toBeCalledTimes(1);
+  });
+
+  test('off 取消监听', () => {
+    const showFn = jest.fn();
+    const closeFn = jest.fn();
+
+    DialogManager.on('show', showFn).on('close', closeFn);
+
+    DialogManager.off('show');
+    DialogManager.off('close');
+
+    DialogManager.show({ name: 'xxx' });
+    DialogManager.close();
+
+    expect(showFn).toBeCalledTimes(0);
+    expect(closeFn).toBeCalledTimes(0);
   });
 });
