@@ -1,7 +1,6 @@
 /**
  * @file ActionManager
  * @description 交互管理器
- * @author huihui
  */
 
 import type {
@@ -25,7 +24,7 @@ class Action {
   // 排序规则
   protected orderBy: OrderByType = 'DESC';
   // 交互队列
-  protected queue: ActionQueueType[];
+  public queue: ActionQueueType[];
   // 支持的事件列表
   private _supportEvents: SupportEvent[] = ['action', 'done', 'allDone'];
   // 事件监听函数集合
@@ -45,6 +44,7 @@ class Action {
 
   /**
    * enQueue 交互入队
+   *
    * @param {ActionFnType} actionFn 交互回调函数
    * @param {ActionInfoType} actionInfo 交互配置信息
    */
@@ -531,11 +531,21 @@ class ActionManager {
    * @description 注意：清空队列时并不会将正在执行的交互一并停止
    * @param {string} instanceName 需要清空的交互实例名称
    */
-  clear(instanceName: string = ''): ActionManager {
+  clear(instanceName?: string): ActionManager {
     instanceName = instanceName || this._activated;
 
     this._actions[instanceName] && this._actions[instanceName].clear();
     return this;
+  }
+
+  /**
+   * getActionQueue 获取当前
+   * @param {string} instanceName 获取交互实例名称
+   */
+  getActionQueue(instanceName?: string): ActionQueueType[] {
+    instanceName = instanceName || this._activated;
+
+    return this._actions[instanceName].queue;
   }
 }
 
