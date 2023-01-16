@@ -1,3 +1,4 @@
 import ActionManager from './ActionManager';
+import DialogManager from './DialogManager';
 
-export default ActionManager;
+export { ActionManager, DialogManager };
