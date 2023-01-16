@@ -48,7 +48,7 @@ export type EventFnType = (...args: unknown[]) => void;
 /** 交互事件监听配置 */
 export type EventInfoType = {
   /** 监听函数的唯一标识 */
-  namespace: string;
+  namespace?: string;
   /** 是否只执行一次 */
-  once: boolean;
+  once?: boolean;
 };

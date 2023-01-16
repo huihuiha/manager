@@ -501,7 +501,7 @@ class ActionManager {
   on(
     event: SupportEvent,
     fn: EventFnType,
-    options: EventInfoType
+    options?: EventInfoType
   ): ActionManager {
     this._actions[this._activated].on(event, fn, options);
     return this;
