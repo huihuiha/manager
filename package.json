@@ -1,12 +1,13 @@
 {
   "name": "manager",
   "version": "1.0.0",
-  "description": "将日常前端开发的业务场景进行二次封装，提升工作效率",
+  "description": "将日常前端开发的复杂场景进行二次封装，提升工作效率",
   "type": "module",
   "scripts": {
     "test": "jest --watch",
     "build": "rollup -c --bundleConfigAsCjs"
   },
+  "mode": "./lib/manager.esm.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/huihuiha/manager.git"
