@@ -14,12 +14,12 @@ module.exports = {
     },
     {
       format: 'es',
-      file: 'lib/manager.esm.min.js',
+      file: 'lib/manager.min.esm.js',
       plugins: [terser()],
     },
     {
       format: 'cjs',
-      file: 'lib/manager.cjs.min.js',
+      file: 'lib/manager.min.cjs.js',
       plugins: [terser()],
     },
   ],
