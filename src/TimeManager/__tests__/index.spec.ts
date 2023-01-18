@@ -70,7 +70,7 @@ describe('TimeManager', () => {
     expect(fn1).toBeCalledTimes(1);
   });
 
-  test('设置只progress事件监听一次', () => {
+  test('设置progress事件只监听一次', () => {
     jest.useFakeTimers();
     const fn1 = jest.fn();
     TimeManager.timer('Test3')
